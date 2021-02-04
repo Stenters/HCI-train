@@ -29,8 +29,12 @@ end
  
 -- Increase the size of the rectangle every frame.
 function love.update(dt)
-    w = w + 1
-    h = h + 1
+    if w < 1240 then
+	w = w + 10
+    end
+    if h < 680 then
+        h = h + 10
+    end
 end
  
 -- Draw a coloured rectangle.
