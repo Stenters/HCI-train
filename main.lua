@@ -4,6 +4,20 @@ PI = 3.1415926535
 -- Load some default values for our rectangle.
 function love.load()
     love.window.setMode(1280, 720, {})
+    windowy = love.graphics.getHeight()
+	
+	bg1 = {}
+	bg1.img = love.graphics.newImage("img/grassland.jpg")
+	bg1.y = 0
+	bg1.height = bg1.img:getHeight()
+
+	bg2 = {}
+	bg2.img = love.graphics.newImage("img/grassland2.jpg")
+	bg2.y = -windowy
+	bg2.height = bg2.img:getHeight()
+	
+	speed = 250
+
 
     train = {
         image = love.graphics.newImage("train.png"),
@@ -38,6 +52,9 @@ function love.load()
 
     print(teamExplicit[2]) -- Prints Grace
 
+
+
+
 end
 
 function updateTrain(dt)
@@ -53,16 +70,39 @@ function updateTrain(dt)
     if love.keyboard.isDown("a") then
         train.angle = train.angle - (PI / 8) * dt
     end
+
+    
+end
+
+function updateBackground(dt)
+    bg1.y = bg1.y + speed * dt
+	bg2.y = bg2.y + speed * dt
+
+	if bg1.y > windowy then
+		bg1.y = bg2.y - bg1.height
+	end
+	if bg2.y > windowy then
+		bg2.y = bg1.y - bg2.height
+	end
+	
 end
  
 function love.update(dt)
+    updateBackground(dt)
     updateTrain(dt)
 end
 
 function drawTrain()
     love.graphics.draw(train.image, train.x, train.y, train.angle)
 end
+
+function drawBackground()
+    love.graphics.setColor(255,255,255,255)
+	love.graphics.draw(bg1.img, 0, bg1.y)
+	love.graphics.draw(bg2.img, 0, bg2.y)
+end
  
 function love.draw()
+    drawBackground()
     drawTrain()
 end
