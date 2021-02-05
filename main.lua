@@ -1,6 +1,39 @@
 PI = 3.1415926535
 
 
+Train = {
+    image = love.graphics.newImage("train.png"),
+    x = 0,
+    y = 0,
+    accel = 0.8,
+    vel = 0,
+    angle = 0
+}
+
+function Train:update(dt)
+    -- Update velocity and position
+    self.vel = self.vel + self.accel * dt
+    self.x = self.x + math.cos(self.angle) * self.vel * dt;
+    self.y = self.y + math.sin(self.angle) * self.vel * dt;
+
+    -- Update train angle based off of user input
+    if love.keyboard.isDown("d") then
+        self.angle = self.angle + (PI / 8) * dt
+    end
+    if love.keyboard.isDown("a") then
+        self.angle = self.angle - (PI / 8) * dt
+    end
+end
+
+function Train:draw()
+    love.graphics.draw(self.image,
+        self.x, self.y,
+        self.angle,
+        1, 1, -- Scaling factor
+        0, 24
+    )
+end
+
 -- Load some default values for our rectangle.
 function love.load()
     love.window.setMode(1280, 720, {})
@@ -19,14 +52,6 @@ function love.load()
 	speed = 250
 
 
-    train = {
-        image = love.graphics.newImage("train.png"),
-        x = 0,
-        y = 0,
-        accel = 0.8,
-        vel = 0,
-        angle = 0
-    }
 
     x, y, w, h = 20, 20, 60, 20  -- Note that these are global
 
