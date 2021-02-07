@@ -34,6 +34,7 @@ function Train:draw()
     )
 end
 
+
 -- Load some default values for our rectangle.
 function love.load()
     love.window.setMode(1280, 720, {})
@@ -48,8 +49,19 @@ function love.load()
 	bg2.img = love.graphics.newImage("img/grass2.jpg")
 	bg2.y = -windowy
 	bg2.height = bg2.img:getHeight()
-	
-	speed = 250
+
+    speed = 250
+    num_giraffees = 10
+    giraffees = {}
+    math.randomseed(os.time())
+    for i = 1,num_giraffees do
+        giraffees[i] = {
+                image = love.graphics.newImage("img/giraffee-bright.png"),
+                x = math.random() * 1200,
+                y = math.random() * 720,
+                onTrain = false
+                }
+    end
 
     train = {
         image = love.graphics.newImage("train.png"),
@@ -100,6 +112,20 @@ function updateTrain(dt)
     end
     
 end
+function updateGiraffees(dt)
+    
+    for i = 1,num_giraffees do
+        if not giraffees[i].onTrain then
+            giraffees[i].y = giraffees[i].y + speed * dt
+
+            if giraffees[i].y > windowy then
+                giraffees[i].y = 0
+                giraffees[i].x = math.random() * 1200
+            end
+        end
+    end
+
+end
 
 function updateBackground(dt)
     bg1.y = bg1.y + speed * dt
@@ -116,11 +142,22 @@ end
  
 function love.update(dt)
     updateBackground(dt)
+    updateGiraffees(dt)
     updateTrain(dt)
 end
 
 function drawTrain()
     love.graphics.draw(train.image, train.x, train.y, train.angle)
+end
+
+function drawGiraffees()
+    for i = 1,num_giraffees do
+        love.graphics.draw(
+            giraffees[i].image, 
+            giraffees[i].x,
+            giraffees[i].y, 0,
+            0.15, 0.15)
+    end
 end
 
 function drawBackground()
@@ -132,4 +169,5 @@ end
 function love.draw()
     drawBackground()
     drawTrain()
+    drawGiraffees()
 end
