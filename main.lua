@@ -40,18 +40,25 @@ function love.load()
     windowy = love.graphics.getHeight()
 	
 	bg1 = {}
-	bg1.img = love.graphics.newImage("img/grassland.jpg")
+	bg1.img = love.graphics.newImage("img/grass1.jpg")
 	bg1.y = 0
 	bg1.height = bg1.img:getHeight()
 
 	bg2 = {}
-	bg2.img = love.graphics.newImage("img/grassland2.jpg")
+	bg2.img = love.graphics.newImage("img/grass2.jpg")
 	bg2.y = -windowy
 	bg2.height = bg2.img:getHeight()
 	
 	speed = 250
 
-
+    train = {
+        image = love.graphics.newImage("train.png"),
+        x = 0,
+        y = 0,
+        accel = 0.8,
+        vel = 0,
+        angle = 0
+    }
 
     x, y, w, h = 20, 20, 60, 20  -- Note that these are global
 
@@ -76,10 +83,6 @@ function love.load()
     teamExplicit = {[1]="Stuart", [2]="Grace", [3]="Andy"}
 
     print(teamExplicit[2]) -- Prints Grace
-
-
-
-
 end
 
 function updateTrain(dt)
@@ -95,7 +98,6 @@ function updateTrain(dt)
     if love.keyboard.isDown("a") then
         train.angle = train.angle - (PI / 8) * dt
     end
-
     
 end
 
