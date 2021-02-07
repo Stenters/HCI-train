@@ -63,52 +63,23 @@ function love.load()
                 }
     end
 
-    train = {
-        image = love.graphics.newImage("train.png"),
-        x = 0,
-        y = 0,
-        accel = 0.8,
-        vel = 0,
-        angle = 0
-    }
-
-    x, y, w, h = 20, 20, 60, 20  -- Note that these are global
-
-    local z = 69 -- This is local
-
-    gameState = { -- This is a table
-        dog = "cat"
-    }
-
-    print(gameState.dog) -- Prints "cat"
-    print(gameState["dog"]) -- Also prints "cat". Arrays are zero indexed
-
-    -- For loop
-    team = {"Stuart", "Grace", "Andy"}
-    for i = 1, 3 do
-        print(team[i])
-    end
-    
-    -- Remember that hashmaps are the only data structure,
-    -- so these two are identical
-    team = {"Stuart", "Grace", "Andy"}
-    teamExplicit = {[1]="Stuart", [2]="Grace", [3]="Andy"}
-
-    print(teamExplicit[2]) -- Prints Grace
+    trees = {{image = love.graphics.newImage("img/tree.png"), x = 100, y = 100}, {image = love.graphics.newImage("img/tree.png"), x = 300, y = 300}}
+    jeeps = {}
+    sanctuaries = {}
 end
 
 function updateTrain(dt)
     -- Update velocity and position
-    train.vel = train.vel + train.accel * dt
-    train.x = train.x + math.cos(train.angle) * train.vel * dt;
-    train.y = train.y + math.sin(train.angle) * train.vel * dt;
+    Train.vel = Train.vel + Train.accel * dt
+    Train.x = Train.x + math.cos(Train.angle) * Train.vel * dt;
+    Train.y = Train.y + math.sin(Train.angle) * Train.vel * dt;
 
     -- Update train angle based off of user input
     if love.keyboard.isDown("d") then
-        train.angle = train.angle + (PI / 8) * dt
+        Train.angle = Train.angle + (PI / 8) * dt
     end
     if love.keyboard.isDown("a") then
-        train.angle = train.angle - (PI / 8) * dt
+        Train.angle = Train.angle - (PI / 8) * dt
     end
     
 end
@@ -139,15 +110,58 @@ function updateBackground(dt)
 	end
 	
 end
- 
+
+function checkTreeCollisions(dt)
+    for _, tree in pairs(trees) do 
+        if checkCollisionWithTrain(tree) then
+            tree.image = love.graphics.newImage("img/tree_collapsed.png")
+            -- Slow the train down since it hit a tree
+            Train.vel = Train.vel - Train.accel * dt
+            -- TODO: Have the train lose a box car
+        end
+    end
+end
+
+function checkJeepCollisions(dt)
+    for _, jeep in pairs(jeeps) do 
+        if checkCollisionWithTrain(jeep) then 
+            jeep.image = love.graphics.newImage('TODO') -- TODO: Replace this once Jeep graphics are done
+            -- Slow the train down since it hit a jeep
+            Train.vel = Train.vel - Train.accel * dt
+            -- TODO: Increment points
+        end
+    end
+end
+
+function checkGiraffeCollisions()
+    for _, giraffe in pairs(giraffees) do 
+        if checkCollisionWithTrain(giraffe) then 
+            -- TODO: Remove giraffe from being displayed
+            -- TODO: Add the giraffe to the train
+        end
+    end
+end
+
+function checkSanctuaryCollisions()
+    for _, sanctuary in pairs(sanctuaries) do 
+        if checkCollisionWithTrain(sanctuary) then 
+            -- TODO: If there's a giraffe in the train decrement the number of giraffees in the train and increment points
+        end
+    end
+end
+
 function love.update(dt)
     updateBackground(dt)
     updateGiraffees(dt)
     updateTrain(dt)
+    checkTreeCollisions(dt)
+    checkJeepCollisions(dt)
+    checkGiraffeCollisions()
+    checkSanctuaryCollisions()
 end
 
 function drawTrain()
-    love.graphics.draw(train.image, train.x, train.y, train.angle)
+    love.graphics.draw(Train.image, Train.x, Train.y, Train.angle)
 end
 
 function drawGiraffees()
@@ -165,9 +179,23 @@ function drawBackground()
 	love.graphics.draw(bg1.img, 0, bg1.y)
 	love.graphics.draw(bg2.img, 0, bg2.y)
 end
+
+function drawTrees()
+    for _, value in pairs(trees) do 
+        love.graphics.draw(value.image, value.x, value.y)
+    end
+end
  
 function love.draw()
     drawBackground()
+    drawTrees()
     drawTrain()
     drawGiraffees()
+end
+
+function checkCollisionWithTrain(gameObjectTable)
+    return Train.x < gameObjectTable.x + gameObjectTable.image:getWidth() and
+        gameObjectTable.x < Train.x + Train.image:getWidth() and
+        Train.y < gameObjectTable.y + gameObjectTable.image:getHeight() and
+        gameObjectTable.y < Train.y + Train.image:getHeight()
 end
