@@ -40,12 +40,12 @@ function love.load()
     windowy = love.graphics.getHeight()
 	
 	bg1 = {}
-	bg1.img = love.graphics.newImage("img/grassland.jpg")
+	bg1.img = love.graphics.newImage("img/grass1.jpg")
 	bg1.y = 0
 	bg1.height = bg1.img:getHeight()
 
 	bg2 = {}
-	bg2.img = love.graphics.newImage("img/grassland2.jpg")
+	bg2.img = love.graphics.newImage("img/grass2.jpg")
 	bg2.y = -windowy
 	bg2.height = bg2.img:getHeight()
 	
@@ -70,7 +70,6 @@ function updateTrain(dt)
     if love.keyboard.isDown("a") then
         Train.angle = Train.angle - (PI / 8) * dt
     end
-
     
 end
 
