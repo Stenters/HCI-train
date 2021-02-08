@@ -262,7 +262,6 @@ function checkSanctuaryCollisions()
 end
 
 function checkCountMaxes()
-    print(speedCount, speedMaxCount)
     if speedCount > speedMaxCount then
         speedMaxCount = speedCount
     end
