@@ -3,6 +3,18 @@ PI = 3.1415926535
 SCREEN_W = 1280
 SCREEN_H = 720
 
+-- Menu screen vars
+buttonX, buttonY, buttonWidth, buttonHeight = 420, 260, 300, 100
+
+-- Global count vars
+speedCount, speedMaxCount = 0,0
+scoreCount, scoreMaxCount = 0,0
+carCount, carMaxCount = 3,0
+jeepCount, jeepMaxCount = 0,0
+giraffeCount, giraffeMaxCount = 0,0
+buttonFont = love.graphics.newFont(48)
+scoreFont = love.graphics.newFont(18)
+
 function lerp(a, b, amount)
     return (1 - amount) * a + amount * b
 end
@@ -143,18 +155,6 @@ end
 
 -- Load some default values for our rectangle.
 function love.load()
-    -- Menu screen vars
-    buttonX, buttonY, buttonWidth, buttonHeight = 420, 260, 300, 100
-
-    -- Global count vars
-    speedCount, speedMaxCount = 0,0
-    scoreCount, scoreMaxCount = 0,0
-    carCount, carMaxCount = 3,0
-    jeepCount, jeepMaxCount = 0,0
-    giraffeCount, giraffeMaxCount = 0,0
-    buttonFont = love.graphics.newFont(48)
-    scoreFont = love.graphics.newFont(18)
-
     love.window.setMode(SCREEN_W, SCREEN_H, {})
     windowy = love.graphics.getHeight()
 	
@@ -262,6 +262,7 @@ function checkSanctuaryCollisions()
 end
 
 function checkCountMaxes()
+    print(speedCount, speedMaxCount)
     if speedCount > speedMaxCount then
         speedMaxCount = speedCount
     end
@@ -282,7 +283,7 @@ end
 function love.update(dt)
     if isMenuScene then
     else
-        speedCount = Train.vel
+        speedCount = Train:getSpeed()
         Train:update(dt)
         world:update(dt)
         updateBackground(dt)
@@ -293,10 +294,6 @@ function love.update(dt)
         checkSanctuaryCollisions()
         checkCountMaxes()
     end
-end
-
-function drawTrain()
-    love.graphics.draw(Train.image, Train.x, Train.y, Train.angle)
 end
 
 function drawGiraffes()
@@ -323,6 +320,7 @@ end
 
 function drawGUI()
     -- Speed / top; Score / top; cars / top; giraffes / total; jeeps / total
+    -- Todo: numbers not updating correctly
 
     displayXval = 1000
     topDisplayXval = 1180
@@ -343,8 +341,8 @@ function drawGUI()
 
         love.graphics.setColor(1,1,1)
         love.graphics.setFont(scoreFont)
-        love.graphics.print(v[1] .. ": " .. v[2], displayXval, k - 12)
-        love.graphics.print("Top: " .. v[3], topDisplayXval, k - 12)
+        love.graphics.print(v[1] .. ": " .. math.floor(v[2]), displayXval, k - 12)
+        love.graphics.print("Top: " .. math.floor(v[3]), topDisplayXval, k - 12)
     end
 
 end
@@ -374,9 +372,9 @@ function love.draw()
         -- love.graphics.setFont()
         love.graphics.print("Play", buttonX + 20, buttonY + 20)
     else
-        drawTrain()
-        drawGiraffes()
         drawBackground()
+        drawGiraffes()
+        drawTrees()
         drawGUI()
         Train:draw()
     end
