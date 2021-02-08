@@ -35,12 +35,14 @@ Train.body:setAngle(PI * 3 / 2)
 
 function Train:update(dt)
     -- Update train angle based off of user input
+    local angularVel = 0
     if love.keyboard.isDown("d") then
-        self.body:applyTorque(1)
+        angularVel = (4 * PI ) * dt
     end
     if love.keyboard.isDown("a") then
-        self.body:applyTorque(-1)
+        angularVel = -(4 * PI) * dt
     end
+    self.body:setAngularVelocity(angularVel)
     if love.keyboard.isDown("space") then
         self:addCart()
     end
