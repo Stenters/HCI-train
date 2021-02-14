@@ -158,17 +158,17 @@ end
 -- Load some default values for our rectangle.
 function love.load()
     love.window.setMode(SCREEN_W, SCREEN_H, {})
-    windowy = love.graphics.getHeight()
+    windowx = love.graphics.getWidth()
 	
 	bg1 = {}
 	bg1.img = love.graphics.newImage("img/grass1.jpg")
-	bg1.y = 0
-	bg1.height = bg1.img:getHeight()
+	bg1.x = 0
+	bg1.width = bg1.img:getWidth()
 
 	bg2 = {}
 	bg2.img = love.graphics.newImage("img/grass2.jpg")
-	bg2.y = -windowy
-	bg2.height = bg2.img:getHeight()
+	bg2.x = -windowx
+	bg2.width = bg2.img:getWidth()
 
     speed = 250
     num_giraffes = 10
@@ -193,11 +193,11 @@ end
 function updateGiraffes(dt)
     for i = 1,num_giraffes do
         if not giraffes[i].onTrain then
-            giraffes[i].y = giraffes[i].y + speed * dt
+            giraffes[i].x = giraffes[i].x - speed * dt
 
-            if giraffes[i].y > windowy then
-                giraffes[i].y = 0
-                giraffes[i].x = math.random() * 1200
+            if giraffes[i].x < 0 then
+                giraffes[i].x = windowx
+                giraffes[i].y = math.random() * 1200
             end
         end
     end
@@ -205,15 +205,23 @@ function updateGiraffes(dt)
 end
 
 function updateBackground(dt)
-    local _, velocityY = Train.body:getLinearVelocity()
-    bg1.y = bg1.y - velocityY * dt
-	bg2.y = bg2.y - velocityY * dt
+    local velocityX, velocityY = Train.body:getLinearVelocity()
+    velocityY = velocityY * -1
+    bg1.x = bg1.x - velocityX * dt
+	bg2.x = bg2.x - velocityX * dt
 
-	if bg1.y > windowy then
-		bg1.y = bg2.y - bg1.height
+	if bg1.x + bg1.width <= 0 then
+		bg1.x = bg2.x + bg2.width
 	end
-	if bg2.y > windowy then
-		bg2.y = bg1.y - bg2.height
+	if bg2.x + bg2.width <= 0  then
+		bg2.x = bg1.x + bg1.width
+	end
+
+    if bg1.x > bg1.width then
+		bg1.x = bg2.x - bg1.width
+	end
+	if bg2.x > bg2.width  then
+		bg2.x = bg1.x - bg2.width
 	end
 	
 end
@@ -309,8 +317,8 @@ end
 
 function drawBackground()
     love.graphics.setColor(255,255,255,255)
-	love.graphics.draw(bg1.img, 0, bg1.y)
-	love.graphics.draw(bg2.img, 0, bg2.y)
+	love.graphics.draw(bg1.img, bg1.x, 0)
+	love.graphics.draw(bg2.img, bg2.x, 0)
 end
 
 function drawTrees()
