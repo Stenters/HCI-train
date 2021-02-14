@@ -216,13 +216,13 @@ end
 
 function updateTrees(dt)
     for i = 1, num_trees do 
-        trees[i].y = trees[i].y + speed * dt
+        trees[i].x = trees[i].x - speed * dt
 
         if trees[i].x < 0 then
             trees[i].image = love.graphics.newImage("img/tree.png")
             trees[i].collapsed = false
-            trees[i].y = 0
-            trees[i].x = math.random() * 1200
+            trees[i].x = windowx
+            trees[i].y = math.random() * 720
         end
     end
 end
@@ -258,7 +258,6 @@ function checkTreeCollisions(dt)
             velX, velY = Train.body:getLinearVelocity()
             Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
             Train:removeCart()
-            carCount = carCount - 1
         end
     end
 end
@@ -420,7 +419,8 @@ end
 
 function checkCollisionWithTrain(gameObjectTable)
     -- First check to see if the object collided with the engine
-    trainX, trainY = Train.body:getPosition()
+    trainX = Train.body:getX()
+    trainY = SCREEN_H / 2
     trainW, trainH = Train.w, Train.h
     objectCollidedWithEngine = trainX < gameObjectTable.x + gameObjectTable.image:getWidth() and
         gameObjectTable.x < trainX + trainW and
@@ -433,6 +433,8 @@ function checkCollisionWithTrain(gameObjectTable)
 
     for _, cart in pairs(Train.carts) do 
         cartX, cartY = cart.body:getPosition()
+        cartX = cart.body:getX()
+        cartY = trainY + cart.body:getY() - Train.body:getY()
         cartW, cartH = cart.w, cart.h
         objectCollidedWithCart = cartX < gameObjectTable.x + gameObjectTable.image:getWidth() and
             gameObjectTable.x < cartX + cartW and
