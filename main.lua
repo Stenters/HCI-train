@@ -172,6 +172,7 @@ function love.load()
 
     speed = 250
     num_giraffes = 10
+    num_trees = 5
     giraffes = {}
     math.randomseed(os.time())
     for i = 1,num_giraffes do
@@ -183,7 +184,16 @@ function love.load()
                 }
     end
 
-    trees = {{image = love.graphics.newImage("img/tree.png"), x = 100, y = 100}, {image = love.graphics.newImage("img/tree.png"), x = 300, y = 300}}
+    trees = {}
+    for i = 1, num_trees do 
+        trees[i] = {
+            image = love.graphics.newImage("img/tree.png"),
+            x = math.random() * 1200,
+            y = math.random() * 720,
+            collapsed = false
+        }
+    end
+
     jeeps = {}
     sanctuaries = {}
 
@@ -202,6 +212,19 @@ function updateGiraffes(dt)
         end
     end
 
+end
+
+function updateTrees(dt)
+    for i = 1, num_trees do 
+        trees[i].y = trees[i].y + speed * dt
+
+        if trees[i].y > windowy then
+            trees[i].image = love.graphics.newImage("img/tree.png")
+            trees[i].collapsed = false
+            trees[i].y = 0
+            trees[i].x = math.random() * 1200
+        end
+    end
 end
 
 function updateBackground(dt)
@@ -228,10 +251,14 @@ end
 
 function checkTreeCollisions(dt)
     for _, tree in pairs(trees) do 
-        if checkCollisionWithTrain(tree) then
+        if not tree.collapsed and checkCollisionWithTrain(tree) then
             tree.image = love.graphics.newImage("img/tree_collapsed.png")
+            tree.collapsed = true
             -- Slow the train down since it hit a tree
-            -- TODO: Have the train lose a box car
+            velX, velY = Train.body:getLinearVelocity()
+            Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
+            Train:removeCart()
+            carCount = carCount - 1
         end
     end
 end
@@ -240,8 +267,9 @@ function checkJeepCollisions(dt)
     for _, jeep in pairs(jeeps) do 
         if checkCollisionWithTrain(jeep) then 
             jeep.image = love.graphics.newImage('TODO') -- TODO: Replace this once Jeep graphics are done
-            -- Slow the train down since it hit a jeep
-            Train.vel = Train.vel - Train.accel * dt
+            -- Slow the train down since it hit a tree
+            velX, velY = Train.body:getLinearVelocity()
+            Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
             jeepCount = jeepCount + 1
             scoreCount = scoreCount + 10
         end
@@ -297,6 +325,7 @@ function love.update(dt)
         world:update(dt)
         updateBackground(dt)
         updateGiraffes(dt)
+        updateTrees(dt)
         checkTreeCollisions(dt)
         checkJeepCollisions(dt)
         checkGiraffeCollisions()
@@ -390,12 +419,30 @@ function love.draw()
 end
 
 function checkCollisionWithTrain(gameObjectTable)
+    -- First check to see if the object collided with the engine
     trainX, trainY = Train.body:getPosition()
     trainW, trainH = Train.w, Train.h
-    return trainX < gameObjectTable.x + gameObjectTable.image:getWidth() and
+    objectCollidedWithEngine = trainX < gameObjectTable.x + gameObjectTable.image:getWidth() and
         gameObjectTable.x < trainX + trainW and
         trainY < gameObjectTable.y + gameObjectTable.image:getHeight() and
         gameObjectTable.y < trainY + trainH
+    
+    if objectCollidedWithEngine then 
+        return true
+    end
+
+    for _, cart in pairs(Train.carts) do 
+        cartX, cartY = cart.body:getPosition()
+        cartW, cartH = cart.w, cart.h
+        objectCollidedWithCart = cartX < gameObjectTable.x + gameObjectTable.image:getWidth() and
+            gameObjectTable.x < cartX + cartW and
+            cartY < gameObjectTable.y + gameObjectTable.image:getHeight() and
+            gameObjectTable.y < cartY + cartH
+        if objectCollidedWithCart then 
+            return true
+        end
+    end
+    return false
 end
 
 function love.keypressed(key)
