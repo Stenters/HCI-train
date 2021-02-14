@@ -218,7 +218,7 @@ function updateTrees(dt)
     for i = 1, num_trees do 
         trees[i].y = trees[i].y + speed * dt
 
-        if trees[i].y > windowy then
+        if trees[i].x < 0 then
             trees[i].image = love.graphics.newImage("img/tree.png")
             trees[i].collapsed = false
             trees[i].y = 0
