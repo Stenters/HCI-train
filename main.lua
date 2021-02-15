@@ -38,12 +38,18 @@ Train = {
     thrust = 400,
     torque = 1,
     maxSpeed = 1000,
+
+    x = 0,
+    y = 0,
+    vx = 0,
+    vy = 0,
+    speed = 100,
     
     carts = {}
 }
 
 Train.body:setInertia(10)
-Train.body:setAngle(PI * 3 / 2)
+Train.body:setAngle(0)
 
 function Train:update(dt)
     -- Update train angle based off of user input
@@ -62,40 +68,15 @@ function Train:update(dt)
         self:removeCart()
     end
 
-    -- Apply a force to the back of the train in the direction
-    local fx, fy = math.cos(self.body:getAngle()), math.sin(self.body:getAngle())
-    local cx, cy = self.body:getWorldCenter()
-    self.body:applyForce(fx * self.thrust, fy * self.thrust, cx, cy)
+    local angle = self.body:getAngle()
+    self.vx = self.speed * math.cos(angle)
+    self.vy = self.speed * math.sin(angle)
 
-    -- Apply max speed
-    local vx, vy = self.body:getLinearVelocity()
-    local speed = math.sqrt(vx^2 + vy^2)
-    if (speed > self.maxSpeed) then
-        -- Find the unit vector and multiply by max speed
-        local ux, uy = vx / speed, vy / speed
-        self.body:setLinearVelocity(ux * self.maxSpeed, uy * self.maxSpeed)
-    end
+    self.x = self.x + self.vx * dt
+    self.y = self.y + self.vy * dt
 
-    -- Update the position and angle of all the carts
-    local lastTailX, lastTailY = self.body:getWorldPoint(-self.CART_CHAIN_LENGTH, 0)
-    local lastAngle = self.body:getAngle()
-
-    for i, cart in ipairs(self.carts) do
-        local currentAngle = cart.body:getAngle()
-        cart.body:setPosition(lastTailX, lastTailY)
-        cart.body:setAngle(lerp(currentAngle, lastAngle, 0.05 * dt))
-
-        lastTailX, lastTailY = cart.body:getWorldPoint(-cart.w - self.CART_CHAIN_LENGTH, 0)
-        lastAngle = cart.body:getAngle()
-    end
-
-    local x = self.body:getX()
-    if x > self.w + SCREEN_W then
-        self.body:setX(x - SCREEN_W - self.w)
-    end
-    if x < -self.w then
-        self.body:setX(x + SCREEN_W + self.w)
-    end
+    -- Set the position of the physics body
+    self.body:setPosition(0, self.y)
 end
 
 function Train:draw()
@@ -103,7 +84,7 @@ function Train:draw()
     local wx, wy = self.body:getPosition()
     local centerY = SCREEN_H / 2
     love.graphics.draw(self.image,
-        wx, centerY,
+        self.body:getX(), self.body:getY(),
         self.body:getAngle(),
         1, 1, -- Scaling factor
         0, self.h / 2 -- Rotate around the center back of the train
@@ -111,12 +92,6 @@ function Train:draw()
 
     -- Draw carts
     for _, cart in ipairs(self.carts) do
-        love.graphics.draw(self.image,
-            cart.body:getX(), centerY + cart.body:getY() - wy,
-            cart.body:getAngle(),
-            1, 1, -- Scaling factor
-            cart.w, cart.h / 2
-        )
     end
 end
 
@@ -228,8 +203,7 @@ function updateTrees(dt)
 end
 
 function updateBackground(dt)
-    local velocityX, velocityY = Train.body:getLinearVelocity()
-    velocityY = velocityY * -1
+    local velocityX, _ = Train.vx
     bg1.x = bg1.x - velocityX * dt
 	bg2.x = bg2.x - velocityX * dt
 
