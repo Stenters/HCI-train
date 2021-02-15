@@ -54,10 +54,10 @@ Train.body:setAngle(0)
 function Train:update(dt)
     -- Update train angle based off of user input
     local angularVel = 0
-    if love.keyboard.isDown("d") then
+    if love.keyboard.isDown("w") then
         angularVel = (4 * PI ) * dt
     end
-    if love.keyboard.isDown("a") then
+    if love.keyboard.isDown("s") then
         angularVel = -(4 * PI) * dt
     end
     self.body:setAngularVelocity(angularVel)
@@ -67,7 +67,6 @@ function Train:update(dt)
     if love.keyboard.isDown("backspace") then
         self:removeCart()
     end
-
 
     -- Update position
     local angle = self.body:getAngle()
