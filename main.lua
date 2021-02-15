@@ -142,7 +142,6 @@ end
 -- Load some default values for our rectangle.
 function love.load()
     love.window.setMode(SCREEN_W, SCREEN_H, {})
-    windowx = love.graphics.getWidth()
 	
 	bg1 = {}
 	bg1.img = love.graphics.newImage("img/grass1.jpg")
@@ -151,10 +150,9 @@ function love.load()
 
 	bg2 = {}
 	bg2.img = love.graphics.newImage("img/grass2.jpg")
-	bg2.x = -windowx
+	bg2.x = -SCREEN_W
 	bg2.width = bg2.img:getWidth()
 
-    speed = 250
     num_giraffes = 10
     num_trees = 5
     giraffes = {}
@@ -162,18 +160,18 @@ function love.load()
     for i = 1,num_giraffes do
         giraffes[i] = {
                 image = love.graphics.newImage("img/giraffe-bright.png"),
-                x = math.random() * 1200,
-                y = math.random() * 720,
+                x = math.random() * SCREEN_W,
+                y = math.random() * SCREEN_H,
                 onTrain = false
-                }
+            }
     end
 
     trees = {}
     for i = 1, num_trees do 
         trees[i] = {
             image = love.graphics.newImage("img/tree.png"),
-            x = math.random() * 1200,
-            y = math.random() * 720,
+            x = math.random() * SCREEN_W,
+            y = math.random() * SCREEN_H,
             collapsed = false
         }
     end
@@ -187,11 +185,18 @@ end
 function updateGiraffes(dt)
     for i = 1,num_giraffes do
         if not giraffes[i].onTrain then
-            giraffes[i].x = giraffes[i].x - speed * dt
 
-            if giraffes[i].x < 0 then
-                giraffes[i].x = windowx
-                giraffes[i].y = math.random() * 1200
+            local velocityX = Train.vx
+            giraffes[i].x = giraffes[i].x - velocityX * dt
+
+            if giraffes[i].x < -65 then
+                giraffes[i].x = SCREEN_W
+                giraffes[i].y = math.random() * SCREEN_H
+            end
+
+            if giraffes[i].x > SCREEN_W then
+                giraffes[i].x = 0
+                giraffes[i].y = math.random() * SCREEN_H
             end
         end
     end
@@ -200,19 +205,20 @@ end
 
 function updateTrees(dt)
     for i = 1, num_trees do 
-        trees[i].x = trees[i].x - speed * dt
+        velocityX = Train.vx
+        trees[i].x = trees[i].x - velocityX * dt
 
         if trees[i].x < 0 then
             trees[i].image = love.graphics.newImage("img/tree.png")
             trees[i].collapsed = false
-            trees[i].x = windowx
-            trees[i].y = math.random() * 720
+            trees[i].x = SCREEN_W
+            trees[i].y = math.random() * SCREEN_H
         end
     end
 end
 
 function updateBackground(dt)
-    local velocityX, _ = Train.vx
+    local velocityX  = Train.vx
     bg1.x = bg1.x - velocityX * dt
 	bg2.x = bg2.x - velocityX * dt
 
@@ -258,18 +264,6 @@ function checkJeepCollisions(dt)
     end
 end
 
-function checkGiraffeCollisions()
-    for _, giraffe in pairs(giraffes) do 
-        if checkCollisionWithTrain(giraffe) then 
-            -- TODO: Remove giraffe from being displayed
-            -- TODO: Add the giraffe to the train
-            giraffeCount = giraffeCount + 1
-            giraffe.onTrain = true
-            scoreCount = scoreCount + 50
-        end
-    end
-end
-
 function checkSanctuaryCollisions()
     for _, sanctuary in pairs(sanctuaries) do 
         if checkCollisionWithTrain(sanctuary) then 
@@ -310,7 +304,7 @@ function love.update(dt)
         updateTrees(dt)
         checkTreeCollisions(dt)
         checkJeepCollisions(dt)
-        checkGiraffeCollisions()
+        -- checkGiraffeCollisions()
         checkSanctuaryCollisions()
         checkCountMaxes()
     end
