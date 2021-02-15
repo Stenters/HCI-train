@@ -152,15 +152,19 @@ function love.load()
 	bg2.x = -SCREEN_W
 	bg2.width = bg2.img:getWidth()
 
-    num_giraffes = 10
+    num_giraffes = 5
     num_trees = 5
     giraffes = {}
     math.randomseed(os.time())
     for i = 1,num_giraffes do
         giraffes[i] = {
                 image = love.graphics.newImage("img/giraffe-bright.png"),
-                x = math.random() * SCREEN_W,
-                y = math.random() * SCREEN_H,
+                body = love.physics.newBody(
+                    world, 
+                    math.random() * SCREEN_W,
+                    math.random() * SCREEN_H,
+                    "dynamic"
+                ),
                 onTrain = false
             }
     end
@@ -183,20 +187,20 @@ end
 
 
 function updateGiraffes(dt)
+    local velocityX, _ = Train.vx
     for i = 1,num_giraffes do
         if not giraffes[i].onTrain then
 
-            local velocityX = Train.vx
-            giraffes[i].x = giraffes[i].x - velocityX * dt
+            giraffes[i].body:setX(giraffes[i].body:getX() - velocityX * dt)
 
-            if giraffes[i].x < -65 then
-                giraffes[i].x = SCREEN_W
-                giraffes[i].y = math.random() * SCREEN_H
+            if giraffes[i].body:getX() < -65 then
+                giraffes[i].body:setX(SCREEN_W)
+                giraffes[i].body:setY(math.random() * 1200)
             end
 
-            if giraffes[i].x > SCREEN_W then
-                giraffes[i].x = 0
-                giraffes[i].y = math.random() * SCREEN_H
+            if giraffes[i].body:getX() > SCREEN_W then
+                giraffes[i].body:setX(0)
+                giraffes[i].body:setY(math.random() * 1200)
             end
         end
     end
@@ -264,6 +268,18 @@ function checkJeepCollisions(dt)
     end
 end
 
+-- function checkGiraffeCollisions()
+--     for _, giraffe in pairs(giraffes) do 
+--         if checkCollisionWithTrain(giraffe) then 
+--             -- TODO: Remove giraffe from being displayed
+--             -- TODO: Add the giraffe to the train
+--             giraffeCount = giraffeCount + 1
+--             giraffe.onTrain = true
+--             scoreCount = scoreCount + 50
+--         end
+--     end
+-- end
+
 function checkSanctuaryCollisions()
     for _, sanctuary in pairs(sanctuaries) do 
         if checkCollisionWithTrain(sanctuary) then 
@@ -314,8 +330,8 @@ function drawGiraffes()
     for i = 1,num_giraffes do
         love.graphics.draw(
             giraffes[i].image, 
-            giraffes[i].x,
-            giraffes[i].y, 0,
+            giraffes[i].body:getX(),
+            giraffes[i].body:getY(), 0,
             0.15, 0.15)
     end
 end
