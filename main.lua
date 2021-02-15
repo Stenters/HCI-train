@@ -152,6 +152,16 @@ function love.load()
 	bg2.x = -SCREEN_W
 	bg2.width = bg2.img:getWidth()
 
+    sanctuary = {
+            img = love.graphics.newImage("img/fence-zone.png"),
+            body = love.physics.newBody(
+                world, 
+                0,
+                0,
+                "dynamic"
+            )
+    }
+
     num_giraffes = 5
     num_trees = 5
     giraffes = {}
@@ -184,7 +194,15 @@ function love.load()
 
     showMenuScreen()
 end
-
+function updateSanctuary(dt)
+    velocityX = Train.vx
+    sanctuary.body:setX(sanctuary.body:getX() - velocityX * dt)
+    print(sanctuary.body:getX())
+    if (sanctuary.body:getX() < 0 - sanctuary.img:getWidth()) then
+        random = math.random() * 5
+        sanctuary.body:setX(SCREEN_W * random) -- place an arbitrary number of units in future
+    end
+end
 
 function updateGiraffes(dt)
     local velocityX, _ = Train.vx
@@ -316,6 +334,7 @@ function love.update(dt)
         Train:update(dt)
         world:update(dt)
         updateBackground(dt)
+        updateSanctuary(dt)
         updateGiraffes(dt)
         updateTrees(dt)
         checkTreeCollisions(dt)
@@ -340,6 +359,7 @@ function drawBackground()
     love.graphics.setColor(255,255,255,255)
 	love.graphics.draw(bg1.img, bg1.x, 0)
 	love.graphics.draw(bg2.img, bg2.x, 0)
+    love.graphics.draw(sanctuary.img, sanctuary.body:getX(), sanctuary.body:getY())
 end
 
 function drawTrees()
