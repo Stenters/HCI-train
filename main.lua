@@ -181,6 +181,7 @@ function love.load()
     showMenuScreen()
 end
 
+
 function updateGiraffes(dt)
     for i = 1,num_giraffes do
         if not giraffes[i].onTrain then
@@ -207,7 +208,7 @@ function updateTrees(dt)
         velocityX = Train.vx
         trees[i].x = trees[i].x - velocityX * dt
 
-        if trees[i].x < 0 then
+        if trees[i].x + trees[i].image:getWidth() < 0 then
             trees[i].image = love.graphics.newImage("img/tree.png")
             trees[i].collapsed = false
             trees[i].x = SCREEN_W
