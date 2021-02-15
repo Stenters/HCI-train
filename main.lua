@@ -39,7 +39,7 @@ Train = {
     torque = 1,
     maxSpeed = 1000,
 
-    x = 0,
+    distanceTraveled = 0,
     y = 0,
     vx = 0,
     vy = 0,
@@ -68,12 +68,21 @@ function Train:update(dt)
         self:removeCart()
     end
 
+
+    -- Update position
     local angle = self.body:getAngle()
     self.vx = self.speed * math.cos(angle)
     self.vy = self.speed * math.sin(angle)
 
-    self.x = self.x + self.vx * dt
+    self.distanceTraveled = self.distanceTraveled + self.vx * dt
     self.y = self.y + self.vy * dt
+
+    -- Wrap train when driven off screen
+    if self.y < -self.h then
+        self.y = self.y + SCREEN_H + 2 * self.h
+    elseif self.y > SCREEN_H + self.h then
+        self.y = self.y - SCREEN_H - 2 * self.h
+    end
 
     -- Set the position of the physics body
     self.body:setPosition(0, self.y)
