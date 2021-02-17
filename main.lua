@@ -501,7 +501,7 @@ function beginContact(a, b, coll)
         b:getUserData().hitByTree = true
         -- Slow the train down since it hit a tree
         velX, velY = Train.body:getLinearVelocity()
-        Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
+        Train.body:setLinearVelocity(velX - * 0.05, velY - velY * 0.05)
         Train:removeCart()
     end
 
