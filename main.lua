@@ -348,7 +348,7 @@ function love.update(dt)
         updateTrees(dt)
         checkTreeCollisions(dt)
         checkJeepCollisions(dt)
-        checkSanctuaryCollisions())
+        checkSanctuaryCollisions()
         checkCountMaxes()
     end
 end
