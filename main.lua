@@ -9,7 +9,7 @@ buttonX, buttonY, buttonWidth, buttonHeight = 420, 260, 300, 100
 -- Global count vars
 speedCount, speedMaxCount = 0,0
 scoreCount, scoreMaxCount = 0,0
-carCount, carMaxCount = 3,0
+carCount, carMaxCount = 0,0
 jeepCount, jeepMaxCount = 0,0
 giraffeCount, giraffeMaxCount = 0,0
 buttonFont = love.graphics.newFont(48)
