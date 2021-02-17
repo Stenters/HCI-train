@@ -166,7 +166,6 @@ function love.load()
             )
     }
     world:setCallbacks(beginContact, endContact, preSolve, postSolve)
-
     num_giraffes = 5
     num_trees = 5
     giraffes = {}
@@ -197,14 +196,18 @@ function love.load()
                 math.random() * SCREEN_H,
                 "dynamic"
             ),
-            collapsed = false
+            shape = love.physics.newRectangleShape(141, 139)
         }
+        trees[i].body:setMass(10)
+        trees[i].fixture = love.physics.newFixture(trees[i].body, trees[i].shape)
+        trees[i].fixture:setUserData({id=i, name="tree", hitByTrain=false})
     end
 
     jeeps = {}
 
     showMenuScreen()
 end
+
 function updateSanctuary(dt)
     velocityX = Train.vx
     sanctuary.body:setX(sanctuary.body:getX() - velocityX * dt)
@@ -217,9 +220,11 @@ end
 function updateGiraffes(dt)
     local velocityX, _ = Train.vx
     for i = 1,num_giraffes do
+        giraffes[i].body:setLinearVelocity(0, 0)
 
         if (giraffes[i].fixture:getUserData().onTrain == false) then
-            giraffes[i].body:setLinearVelocity(velocityX * -1, 0)
+            velocityX = Train.vx
+            giraffes[i].body:setX(giraffes[i].body:getX() - velocityX * dt)
 
             if giraffes[i].body:getX() < -65 then
                 giraffes[i].body:setX(SCREEN_W)
@@ -231,7 +236,6 @@ function updateGiraffes(dt)
                 giraffes[i].body:setY(math.random() * 1200)
             end
         else
-            giraffes[i].body:setLinearVelocity(0, 0)
             giraffes[i].body:setX(Train.body:getX())
             giraffes[i].body:setY(Train.body:getY())         
         end
@@ -242,20 +246,24 @@ end
 
 function updateTrees(dt)
     for i = 1, num_trees do 
-        velocityX = Train.vx
-        trees[i].body:setX(trees[i].body:getX() - velocityX * dt)
-        
-        if trees[i].body:getX() < -65 then
-            trees[i].image = love.graphics.newImage("img/tree.png")
-            trees[i].collapsed = false
-            trees[i].body:setX(SCREEN_W)
-            trees[i].body:setY(math.random() * 1200)
-        end
+        trees[i].body:setLinearVelocity(0, 0)
 
-        if trees[i].body:getX() > SCREEN_W then
-            trees[i].image = love.graphics.newImage("img/tree.png")
-            trees[i].collapsed = false
-            trees[i].body:setX(0)
+        if not trees[i].fixture:getUserData().hitByTree then 
+            velocityX = Train.vx
+            trees[i].body:setX(trees[i].body:getX() - velocityX * dt)
+            
+            if trees[i].body:getX() < -65 then
+                trees[i].body:setX(SCREEN_W)
+                trees[i].body:setY(math.random() * 1200)
+            end
+    
+            if trees[i].body:getX() > SCREEN_W then
+                trees[i].body:setX(0)
+                trees[i].body:setY(math.random() * 1200)
+            end
+        else
+            trees[i].fixture:setUserData({id=i, name="tree", hitByTrain=false})
+            trees[i].body:setX(SCREEN_W)
             trees[i].body:setY(math.random() * 1200)
         end
     end
@@ -280,19 +288,6 @@ function updateBackground(dt)
 		bg2.x = bg1.x - bg2.width
 	end
 	
-end
-
-function checkTreeCollisions(dt)
-    for _, tree in pairs(trees) do 
-        if not tree.collapsed and checkCollisionWithTrain(tree) then
-            tree.image = love.graphics.newImage("img/tree_collapsed.png")
-            tree.collapsed = true
-            -- Slow the train down since it hit a tree
-            velX, velY = Train.body:getLinearVelocity()
-            Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
-            Train:removeCart()
-        end
-    end
 end
 
 function checkJeepCollisions(dt)
@@ -346,7 +341,6 @@ function love.update(dt)
         updateSanctuary(dt)
         updateGiraffes(dt)
         updateTrees(dt)
-        checkTreeCollisions(dt)
         checkJeepCollisions(dt)
         checkSanctuaryCollisions()
         checkCountMaxes()
@@ -484,23 +478,37 @@ end
 
 -- collision code
 function beginContact(a, b, coll)
-
-
-end
-
-function endContact(a, b, coll)
     if (a == nil or b == nil) then return end
     if (a:getUserData().name == 'train' and b:getUserData().name == 'giraffe') then
 
-        print("Running collision handler :D")
         b:getUserData().onTrain = true
 
     end
     if (a:getUserData().name == 'giraffe' and b:getUserData().name == 'train')
     then
-        print("Running collision handler :D")
         b:getUserData().onTrain = true
     end
+
+    if (a:getUserData().name == 'train' and b:getUserData().name == 'tree') then
+        b:getUserData().hitByTree = true
+        -- Slow the train down since it hit a tree
+        velX, velY = Train.body:getLinearVelocity()
+        Train.body:setLinearVelocity(velX - velX * 0.05, velY - velY * 0.05)
+        Train:removeCart()
+    end
+    if (a:getUserData().name == 'tree' and b:getUserData().name == 'train')
+    then
+        b:getUserData().hitByTree = true
+        -- Slow the train down since it hit a tree
+        velX, velY = Train.body:getLinearVelocity()
+        Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
+        Train:removeCart()
+    end
+
+end
+
+function endContact(a, b, coll)
+
 end
  
 function preSolve(a, b, coll)
