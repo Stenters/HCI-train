@@ -153,7 +153,7 @@ function love.load()
 	bg2.width = bg2.img:getWidth()
 
     sanctuary = {
-            img = love.graphics.newImage("img/fence-zone.png"),
+            image = love.graphics.newImage("img/fence-zone.png"),
             body = love.physics.newBody(
                 world, 
                 0,
@@ -201,8 +201,7 @@ end
 function updateSanctuary(dt)
     velocityX = Train.vx
     sanctuary.body:setX(sanctuary.body:getX() - velocityX * dt)
-    print(sanctuary.body:getX())
-    if (sanctuary.body:getX() < 0 - sanctuary.img:getWidth()) then
+    if (sanctuary.body:getX() < 0 - sanctuary.image:getWidth()) then
         random = math.random() * 5
         sanctuary.body:setX(SCREEN_W * random) -- place an arbitrary number of units in future
     end
@@ -310,12 +309,10 @@ end
 -- end
 
 function checkSanctuaryCollisions()
-    for _, sanctuary in pairs(sanctuaries) do 
-        if checkCollisionWithTrain(sanctuary) then 
-            if giraffeCount > 1 then
-                giraffeCount = giraffeCount - 1
-                -- TODO: actually remove giraffe from train
-            end
+    if checkCollisionWithTrain(sanctuary) then 
+        if giraffeCount > 1 then
+            giraffeCount = giraffeCount - 1
+            -- TODO: actually remove giraffe from train
         end
     end
 end
@@ -370,7 +367,7 @@ function drawBackground()
     love.graphics.setColor(255,255,255,255)
 	love.graphics.draw(bg1.img, bg1.x, 0)
 	love.graphics.draw(bg2.img, bg2.x, 0)
-    love.graphics.draw(sanctuary.img, sanctuary.body:getX(), sanctuary.body:getY())
+    love.graphics.draw(sanctuary.image, sanctuary.body:getX(), sanctuary.body:getY())
 end
 
 function drawTrees()
@@ -446,10 +443,10 @@ function checkCollisionWithTrain(gameObjectTable)
     trainX = Train.body:getX()
     trainY = SCREEN_H / 2
     trainW, trainH = Train.w, Train.h
-    objectCollidedWithEngine = trainX < gameObjectTable.x + gameObjectTable.image:getWidth() and
-        gameObjectTable.x < trainX + trainW and
-        trainY < gameObjectTable.y + gameObjectTable.image:getHeight() and
-        gameObjectTable.y < trainY + trainH
+    objectCollidedWithEngine = trainX < gameObjectTable.body:getX() + gameObjectTable.image:getWidth() and
+        gameObjectTable.body:getX() < trainX + trainW and
+        trainY < gameObjectTable.body:getY() + gameObjectTable.image:getHeight() and
+        gameObjectTable.body:getY() < trainY + trainH
     
     if objectCollidedWithEngine then 
         return true
@@ -460,10 +457,10 @@ function checkCollisionWithTrain(gameObjectTable)
         cartX = cart.body:getX()
         cartY = trainY + cart.body:getY() - Train.body:getY()
         cartW, cartH = cart.w, cart.h
-        objectCollidedWithCart = cartX < gameObjectTable.x + gameObjectTable.image:getWidth() and
-            gameObjectTable.x < cartX + cartW and
-            cartY < gameObjectTable.y + gameObjectTable.image:getHeight() and
-            gameObjectTable.y < cartY + cartH
+        objectCollidedWithCart = cartX < gameObjectTable.body:getX() + gameObjectTable.image:getWidth() and
+            gameObjectTable.body:getX() < cartX + cartW and
+            cartY < gameObjectTable.body:getY() + gameObjectTable.image:getHeight() and
+            gameObjectTable.body:getY() < cartY + cartH
         if objectCollidedWithCart then 
             return true
         end
