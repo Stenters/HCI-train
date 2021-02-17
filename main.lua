@@ -183,17 +183,21 @@ function love.load()
     for i = 1, num_trees do 
         trees[i] = {
             image = love.graphics.newImage("img/tree.png"),
-            x = math.random() * SCREEN_W,
-            y = math.random() * SCREEN_H,
+            body = love.physics.newBody(
+                world, 
+                math.random() * SCREEN_W,
+                math.random() * SCREEN_H,
+                "dynamic"
+            ),
             collapsed = false
         }
     end
 
     jeeps = {}
-    sanctuaries = {}
 
     showMenuScreen()
 end
+
 function updateSanctuary(dt)
     velocityX = Train.vx
     sanctuary.body:setX(sanctuary.body:getX() - velocityX * dt)
@@ -228,13 +232,20 @@ end
 function updateTrees(dt)
     for i = 1, num_trees do 
         velocityX = Train.vx
-        trees[i].x = trees[i].x - velocityX * dt
-
-        if trees[i].x + trees[i].image:getWidth() < 0 then
+        trees[i].body:setX(trees[i].body:getX() - velocityX * dt)
+        
+        if trees[i].body:getX() < -65 then
             trees[i].image = love.graphics.newImage("img/tree.png")
             trees[i].collapsed = false
-            trees[i].x = SCREEN_W
-            trees[i].y = math.random() * SCREEN_H
+            trees[i].body:setX(SCREEN_W)
+            trees[i].body:setY(math.random() * 1200)
+        end
+
+        if trees[i].body:getX() > SCREEN_W then
+            trees[i].image = love.graphics.newImage("img/tree.png")
+            trees[i].collapsed = false
+            trees[i].body:setX(0)
+            trees[i].body:setY(math.random() * 1200)
         end
     end
 end
@@ -364,7 +375,7 @@ end
 
 function drawTrees()
     for _, value in pairs(trees) do 
-        love.graphics.draw(value.image, value.x, value.y)
+        love.graphics.draw(value.image, value.body:getX(), value.body:getY())
     end
 end
 
