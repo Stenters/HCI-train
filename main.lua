@@ -45,11 +45,15 @@ Train = {
     vy = 0,
     speed = 100,
     
+    shape = love.physics.newRectangleShape(100, 100),
+    
     carts = {}
 }
 
 Train.body:setInertia(10)
 Train.body:setAngle(0)
+Train.fixture = love.physics.newFixture(Train.body, Train.shape)
+Train.fixture:setUserData({name="train"})
 
 function Train:update(dt)
     -- Update train angle based off of user input
@@ -153,7 +157,7 @@ function love.load()
 	bg2.width = bg2.img:getWidth()
 
     sanctuary = {
-            image = love.graphics.newImage("img/fence-zone.png"),
+        image = love.graphics.newImage("img/fence-zone.png"),
             body = love.physics.newBody(
                 world, 
                 0,
@@ -161,6 +165,7 @@ function love.load()
                 "dynamic"
             )
     }
+    world:setCallbacks(beginContact, endContact, preSolve, postSolve)
 
     num_giraffes = 5
     num_trees = 5
@@ -175,8 +180,11 @@ function love.load()
                     math.random() * SCREEN_H,
                     "dynamic"
                 ),
-                onTrain = false
+                shape = love.physics.newRectangleShape(65, 85)
             }
+        giraffes[i].body:setMass(10)
+        giraffes[i].fixture = love.physics.newFixture(giraffes[i].body, giraffes[i].shape)
+        giraffes[i].fixture:setUserData({id=i, name="giraffe", onTrain=false})
     end
 
     trees = {}
@@ -197,7 +205,6 @@ function love.load()
 
     showMenuScreen()
 end
-
 function updateSanctuary(dt)
     velocityX = Train.vx
     sanctuary.body:setX(sanctuary.body:getX() - velocityX * dt)
@@ -210,9 +217,9 @@ end
 function updateGiraffes(dt)
     local velocityX, _ = Train.vx
     for i = 1,num_giraffes do
-        if not giraffes[i].onTrain then
 
-            giraffes[i].body:setX(giraffes[i].body:getX() - velocityX * dt)
+        if (giraffes[i].fixture:getUserData().onTrain == false) then
+            giraffes[i].body:setLinearVelocity(velocityX * -1, 0)
 
             if giraffes[i].body:getX() < -65 then
                 giraffes[i].body:setX(SCREEN_W)
@@ -223,7 +230,12 @@ function updateGiraffes(dt)
                 giraffes[i].body:setX(0)
                 giraffes[i].body:setY(math.random() * 1200)
             end
+        else
+            giraffes[i].body:setLinearVelocity(0, 0)
+            giraffes[i].body:setX(Train.body:getX())
+            giraffes[i].body:setY(Train.body:getY())         
         end
+    
     end
 
 end
@@ -296,17 +308,6 @@ function checkJeepCollisions(dt)
     end
 end
 
--- function checkGiraffeCollisions()
---     for _, giraffe in pairs(giraffes) do 
---         if checkCollisionWithTrain(giraffe) then 
---             -- TODO: Remove giraffe from being displayed
---             -- TODO: Add the giraffe to the train
---             giraffeCount = giraffeCount + 1
---             giraffe.onTrain = true
---             scoreCount = scoreCount + 50
---         end
---     end
--- end
 
 function checkSanctuaryCollisions()
     if checkCollisionWithTrain(sanctuary) then 
@@ -338,17 +339,16 @@ end
 function love.update(dt)
     if isMenuScene then
     else
+        world:update(dt)
         speedCount = Train:getSpeed()
         Train:update(dt)
-        world:update(dt)
         updateBackground(dt)
         updateSanctuary(dt)
         updateGiraffes(dt)
         updateTrees(dt)
         checkTreeCollisions(dt)
         checkJeepCollisions(dt)
-        -- checkGiraffeCollisions()
-        checkSanctuaryCollisions()
+        checkSanctuaryCollisions())
         checkCountMaxes()
     end
 end
@@ -480,4 +480,33 @@ function love.mousepressed(x,y)
     if (isMenuScene and (x > buttonX and x < buttonX + buttonWidth) and (y > buttonY and y < buttonY + buttonHeight)) then
         showGameScreen()
     end
+end
+
+-- collision code
+function beginContact(a, b, coll)
+
+
+end
+
+function endContact(a, b, coll)
+    if (a == nil or b == nil) then return end
+    if (a:getUserData().name == 'train' and b:getUserData().name == 'giraffe') then
+
+        print("Running collision handler :D")
+        b:getUserData().onTrain = true
+
+    end
+    if (a:getUserData().name == 'giraffe' and b:getUserData().name == 'train')
+    then
+        print("Running collision handler :D")
+        b:getUserData().onTrain = true
+    end
+end
+ 
+function preSolve(a, b, coll)
+ 
+end
+ 
+function postSolve(a, b, coll, normalimpulse, tangentimpulse)
+ 
 end
