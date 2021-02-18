@@ -7,11 +7,10 @@ SCREEN_H = 720
 buttonX, buttonY, buttonWidth, buttonHeight = (SCREEN_W/2)-150, (SCREEN_H/2)+100, 300, 100
 
 -- Global count vars
-speedCount, speedMaxCount = 0,0
 scoreCount, scoreMaxCount = 0,0
-carCount, carMaxCount = 0,0
 jeepCount, jeepMaxCount = 0,0
-giraffeCount, giraffeMaxCount = 0,0
+giraffeMaxCount = 0
+
 buttonFont = love.graphics.newFont(48)
 scoreFont = love.graphics.newFont(18)
 
@@ -22,7 +21,8 @@ end
 world = love.physics.newWorld(0, 0, true)
 
 Train = {
-    CART_CHAIN_LENGTH = 5,
+    CART_CHAIN_MAX = 4,
+    CART_CHAIN_MIN = 1,
     COLLISION_PENALTY = 0.75, -- Speed lost per collision
 
     -- The ratio torque, thrust, and max speed is multiplied
@@ -51,7 +51,8 @@ Train = {
     shape = love.physics.newRectangleShape(100, 100),
     
     carts = {},
-    giraffeCount = 0
+    giraffeCount = 0,
+    cartCount = 0
 }
 
 -- Create the physics body
@@ -63,19 +64,19 @@ Train.body:setAngle(0)
 function Train:update(dt)
     -- Update train angle based off of user input
     local angularVel = 0
-    if love.keyboard.isDown("w") then
+    if love.keyboard.isDown("s") then
         angularVel = (4 * PI ) * dt
     end
-    if love.keyboard.isDown("s") then
+    if love.keyboard.isDown("w") then
         angularVel = -(4 * PI) * dt
     end
     self.body:setAngularVelocity(angularVel)
-    if love.keyboard.isDown("space") then
-        self:addCart()
-    end
-    if love.keyboard.isDown("backspace") then
-        self:removeCart()
-    end
+    -- if love.keyboard.isDown("space") then
+    --     self:addCart()
+    -- end
+    -- if love.keyboard.isDown("backspace") then
+    --     self:removeCart()
+    -- end
 
     -- Accelerate
     self.speed = lerp(self.speed, self.maxSpeed, (1 / 3) * dt)
@@ -96,6 +97,8 @@ function Train:update(dt)
 
     self.body:setPosition(self.rect.x, self.rect.y)
 end
+
+-- Todo: Implement add and remove cart functions (note: remember to change self.cartCount in them)
 
 function Train:draw()
     -- Draw carts
@@ -128,14 +131,33 @@ end
 
 function Train:collideTree()
     self.speed = self.speed * (1 - self.COLLISION_PENALTY)
+    if self.cartCount > self.CART_CHAIN_MIN then
+        -- self.removeCart()
+    end
 end
 
 function Train:collideSanctuary()
+    increaseScore(10 * self.giraffeCount)
     self.giraffeCount = 0
+    if self.cartCount < self.CART_CHAIN_MAX then
+        -- self.addCart()
+    end
 end
 
 function Train:collideGiraffe()
     self.giraffeCount = self.giraffeCount + 1
+    if self.giraffeCount > giraffeMaxCount then
+        giraffeMaxCount = self.giraffeCount
+    end
+end
+
+function Train:collideJeep()
+    self.speed = self.speed * (1 - self.COLLISION_PENALTY)
+    increaseScore(30)
+    jeepCount = jeepCount + 1
+    if jeepCount > jeepMaxCount then
+        jeepMaxCount = jeepCount
+    end
 end
 
 function love.load()
@@ -303,24 +325,12 @@ function checkJeepCollisions(dt)
     end
 end
 
-
-function checkCountMaxes()
-    if speedCount > speedMaxCount then
-        speedMaxCount = speedCount
-    end
+function increaseScore(ds)
+    scoreCount = scoreCount + ds
     if scoreCount > scoreMaxCount then
         scoreMaxCount = scoreCount
     end
-    if carCount > carMaxCount then
-        carMaxCount = carCount
-    end
-    if giraffeCount > giraffeMaxCount then
-        giraffeMaxCount = giraffeCount
-    end
-    if jeepCount > jeepMaxCount then
-        jeepMaxCount = jeepCount
-    end
-end    
+end
 
 function love.update(dt)
     if isMenuScene then
@@ -333,7 +343,6 @@ function love.update(dt)
         updateGiraffes(dt)
         updateTrees(dt)
         checkJeepCollisions(dt)
-        checkCountMaxes()
     end
 end
 
@@ -373,26 +382,24 @@ function drawGUI()
     -- Speed / top; Score / top; cars / top; giraffes / total; jeeps / total
     -- Todo: numbers not updating correctly
 
-    displayXval = 1000
-    topDisplayXval = 1180
+    displayXval = 240
+    topDisplayXval = 120
     
     displayYVals = {
-        [30] = {"Speed", speedCount, speedMaxCount},
-        [70] = {"Score", scoreCount, scoreMaxCount},
-        [110] = {"Cars", carCount, carMaxCount},
-        [150] = {"Giraffes", giraffeCount, giraffeMaxCount},
-        [190] = {"Jeeps", jeepCount, jeepMaxCount},
+        [30] = {"Score", scoreCount, scoreMaxCount},
+        [70] = {"Giraffes", Train.giraffeCount, giraffeMaxCount},
+        [110] = {"Jeeps", jeepCount, jeepMaxCount},
     }
     
     for k,v in pairs(displayYVals) do
         love.graphics.setColor(0, 0.4, 0.4)
 
         love.graphics.circle("fill", displayXval, k, 15)
-        love.graphics.rectangle("fill", displayXval, k - 15, 280, 30)
+        love.graphics.rectangle("fill", 0, k - 15, displayXval, 30)
 
         love.graphics.setColor(1,1,1)
         love.graphics.setFont(scoreFont)
-        love.graphics.print(v[1] .. ": " .. math.floor(v[2]), displayXval, k - 12)
+        love.graphics.print(v[1] .. ": " .. math.floor(v[2]), 5, k - 12)
         love.graphics.print("Top: " .. math.floor(v[3]), topDisplayXval, k - 12)
     end
 
@@ -427,10 +434,10 @@ function love.draw()
                 -350, SCREEN_H / 8, 2000, "center")
     else
         drawBackground()
+        drawGUI()
         drawSanctuary()
         drawGiraffes()
         drawTrees()
-        drawGUI()
         Train:draw()
     end
 end
