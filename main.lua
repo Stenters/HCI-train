@@ -163,8 +163,15 @@ function love.load()
                 0,
                 0,
                 "dynamic"
-            )
+            ),
     }
+    print(sanctuary.image:getWidth())
+    print(sanctuary.image:getHeight())
+    sanctuary.shape = love.physics.newRectangleShape(sanctuary.image:getWidth(), sanctuary.image:getHeight())
+    sanctuary.body:setMass(0)
+    sanctuary.fixture = love.physics.newFixture(sanctuary.body, sanctuary.shape)
+    sanctuary.fixture:setUserData({name="sanctuary"})
+    
     world:setCallbacks(beginContact, endContact, preSolve, postSolve)
     num_giraffes = 5
     num_trees = 5
@@ -304,15 +311,6 @@ function checkJeepCollisions(dt)
 end
 
 
-function checkSanctuaryCollisions()
-    if checkCollisionWithTrain(sanctuary) then 
-        if giraffeCount > 1 then
-            giraffeCount = giraffeCount - 1
-            -- TODO: actually remove giraffe from train
-        end
-    end
-end
-
 function checkCountMaxes()
     if speedCount > speedMaxCount then
         speedMaxCount = speedCount
@@ -342,7 +340,6 @@ function love.update(dt)
         updateGiraffes(dt)
         updateTrees(dt)
         checkJeepCollisions(dt)
-        checkSanctuaryCollisions()
         checkCountMaxes()
     end
 end
@@ -480,13 +477,36 @@ end
 function beginContact(a, b, coll)
     if (a == nil or b == nil) then return end
     if (a:getUserData().name == 'train' and b:getUserData().name == 'giraffe') then
-
         b:getUserData().onTrain = true
-
+        giraffeCount = giraffeCount + 1
     end
     if (a:getUserData().name == 'giraffe' and b:getUserData().name == 'train')
     then
         b:getUserData().onTrain = true
+        giraffeCount = giraffeCount + 1
+    end
+
+    if (a:getUserData().name == 'sanctuary' and b:getUserData().name == 'train')
+    then
+        print("Collissoin with sanctuary")
+        giraffeCount = 0
+        for i = 1,num_giraffes do
+            if (giraffes[i].fixture:getUserData().onTrain) then
+                print('pulling giraffe off train')
+                giraffes[i].fixture:getUserData().onTrain = false
+            end
+        end
+    end
+    if (a:getUserData().name == 'train' and b:getUserData().name == 'sanctuary')
+    then
+        print("Collissoin with sanctuary")
+        giraffeCount = 0
+        for i = 1,num_giraffes do
+            if (giraffes[i].fixture:getUserData().onTrain) then
+                print('pulling giraffe off train')
+                giraffes[i].fixture:getUserData().onTrain = false
+            end
+        end
     end
 
     if (a:getUserData().name == 'train' and b:getUserData().name == 'tree') then
@@ -501,7 +521,7 @@ function beginContact(a, b, coll)
         b:getUserData().hitByTree = true
         -- Slow the train down since it hit a tree
         velX, velY = Train.body:getLinearVelocity()
-        Train.body:setLinearVelocity(velX - * 0.05, velY - velY * 0.05)
+        Train.body:setLinearVelocity(velX - velX * 0.05, velY - velY * 0.05)
         Train:removeCart()
     end
 
