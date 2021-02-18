@@ -9,7 +9,7 @@ buttonX, buttonY, buttonWidth, buttonHeight = 420, 260, 300, 100
 -- Global count vars
 speedCount, speedMaxCount = 0,0
 scoreCount, scoreMaxCount = 0,0
-carCount, carMaxCount = 3,0
+carCount, carMaxCount = 0,0
 jeepCount, jeepMaxCount = 0,0
 giraffeCount, giraffeMaxCount = 0,0
 buttonFont = love.graphics.newFont(48)
@@ -23,6 +23,7 @@ world = love.physics.newWorld(0, 0, true)
 
 Train = {
     CART_CHAIN_LENGTH = 5,
+    COLLISION_PENALTY = 0.75, -- Speed lost per collision
 
     -- The ratio torque, thrust, and max speed is multiplied
     -- by each time a cart is added
@@ -33,25 +34,39 @@ Train = {
     image = love.graphics.newImage("train.png"),
     body = love.physics.newBody(world, 100, 100, "dynamic"),
 
-    w = 128,
-    h = 48,
+    rect = {
+         x = 0,
+         y = 0,
+         w = 128,
+         h = 48,
+    },
     thrust = 400,
     torque = 1,
     maxSpeed = 1000,
+
+    vx = 0,
+    vy = 0,
+    speed = 100,
     
-    carts = {}
+    shape = love.physics.newRectangleShape(100, 100),
+    
+    carts = {},
+    giraffeCount = 0
 }
 
-Train.body:setInertia(10)
-Train.body:setAngle(PI * 3 / 2)
+-- Create the physics body
+Train.fixture = love.physics.newFixture(Train.body, Train.shape)
+Train.fixture:setUserData({name="train"})
+Train.body:setInertia(0)
+Train.body:setAngle(0)
 
 function Train:update(dt)
     -- Update train angle based off of user input
     local angularVel = 0
-    if love.keyboard.isDown("d") then
+    if love.keyboard.isDown("w") then
         angularVel = (4 * PI ) * dt
     end
-    if love.keyboard.isDown("a") then
+    if love.keyboard.isDown("s") then
         angularVel = -(4 * PI) * dt
     end
     self.body:setAngularVelocity(angularVel)
@@ -62,40 +77,24 @@ function Train:update(dt)
         self:removeCart()
     end
 
-    -- Apply a force to the back of the train in the direction
-    local fx, fy = math.cos(self.body:getAngle()), math.sin(self.body:getAngle())
-    local cx, cy = self.body:getWorldCenter()
-    self.body:applyForce(fx * self.thrust, fy * self.thrust, cx, cy)
+    -- Accelerate
+    self.speed = lerp(self.speed, self.maxSpeed, (1 / 3) * dt)
 
-    -- Apply max speed
-    local vx, vy = self.body:getLinearVelocity()
-    local speed = math.sqrt(vx^2 + vy^2)
-    if (speed > self.maxSpeed) then
-        -- Find the unit vector and multiply by max speed
-        local ux, uy = vx / speed, vy / speed
-        self.body:setLinearVelocity(ux * self.maxSpeed, uy * self.maxSpeed)
+    -- Update position
+    local angle = self.body:getAngle()
+    self.vx = self.speed * math.cos(angle)
+    self.vy = self.speed * math.sin(angle)
+
+    self.rect.y = self.rect.y + self.vy * dt
+
+    -- Wrap train when driven off screen
+    if self.rect.y < -self.rect.h then
+        self.rect.y = self.rect.y + SCREEN_H + 2 * self.rect.h
+    elseif self.rect.y > SCREEN_H + self.rect.h then
+        self.rect.y = self.rect.y - SCREEN_H - 2 * self.rect.h
     end
 
-    -- Update the position and angle of all the carts
-    local lastTailX, lastTailY = self.body:getWorldPoint(-self.CART_CHAIN_LENGTH, 0)
-    local lastAngle = self.body:getAngle()
-
-    for i, cart in ipairs(self.carts) do
-        local currentAngle = cart.body:getAngle()
-        cart.body:setPosition(lastTailX, lastTailY)
-        cart.body:setAngle(lerp(currentAngle, lastAngle, 0.05 * dt))
-
-        lastTailX, lastTailY = cart.body:getWorldPoint(-cart.w - self.CART_CHAIN_LENGTH, 0)
-        lastAngle = cart.body:getAngle()
-    end
-
-    local x = self.body:getX()
-    if x > self.w + SCREEN_W then
-        self.body:setX(x - SCREEN_W - self.w)
-    end
-    if x < -self.w then
-        self.body:setX(x + SCREEN_W + self.w)
-    end
+    self.body:setPosition(self.rect.x, self.rect.y)
 end
 
 function Train:draw()
@@ -103,156 +102,190 @@ function Train:draw()
     local wx, wy = self.body:getPosition()
     local centerY = SCREEN_H / 2
     love.graphics.draw(self.image,
-        wx, centerY,
+        self.rect.x, self.rect.y + self.rect.h / 2,
         self.body:getAngle(),
         1, 1, -- Scaling factor
-        0, self.h / 2 -- Rotate around the center back of the train
+        0, self.rect.h / 2 -- Rotate around the center back of the train
     )
 
-    -- Draw carts
-    for _, cart in ipairs(self.carts) do
-        love.graphics.draw(self.image,
-            cart.body:getX(), centerY + cart.body:getY() - wy,
-            cart.body:getAngle(),
-            1, 1, -- Scaling factor
-            cart.w, cart.h / 2
-        )
-    end
-end
+    local cx, cy = self.body:getWorldCenter()
 
-function Train:addCart()
-    -- Create new cart and add it to the list
-    local newCart = {
-        w = 128,
-        h = 48,
-        body = nil
-    }
-    newCart.body = love.physics.newBody(world, self.w, self.h, "dynamic")
-    newCart.body:setAngle(PI * 3 / 2)
-    self.carts[#self.carts + 1] = newCart
-
-    -- Adjust train max speed, turn radius, and thrust
-    self.maxSpeed = self.maxSpeed * self.RATIO_MAX_SPEED_PER_CART
-    self.torque = self.torque * self.RATIO_TORQUE_PER_CART
-    self.thrust = self.thrust * self.RATIO_THRUST_PER_CART
-end
-
-function Train:removeCart()
-    if #self.carts > 0 then
-        self.carts[#self.carts] = nil
-
-        -- Adjust train max speed, turn radius, and thrust
-        self.maxSpeed = self.maxSpeed / self.RATIO_MAX_SPEED_PER_CART
-        self.torque = self.torque / self.RATIO_TORQUE_PER_CART
-        self.thrust = self.thrust / self.RATIO_THRUST_PER_CART
+    local w = giraffeImage:getWidth() * 0.075
+    local h = giraffeImage:getHeight() * 0.075
+    for i=1, self.giraffeCount do
+        x = (self.rect.x + i * w * 0.2) * math.cos(self.body:getAngle())
+        y = self.rect.y + i * h * 0.2 * math.sin(self.body:getAngle())
+        love.graphics.draw(giraffeImage,
+            x + w, y, self.body:getAngle(),
+            -0.075, 0.075,
+            0, 0)
     end
 end
 
 function Train:getSpeed()
-    local vx, vy = self.body:getLinearVelocity()
-    local speed = math.sqrt(vx^2 + vy^2)
-    return speed
+    return self.speed
 end
 
+function Train:collideTree()
+    self.speed = self.speed * (1 - self.COLLISION_PENALTY)
+end
 
--- Load some default values for our rectangle.
+function Train:collideSanctuary()
+    self.giraffeCount = 0
+end
+
+function Train:collideGiraffe()
+    self.giraffeCount = self.giraffeCount + 1
+end
+
 function love.load()
     love.window.setMode(SCREEN_W, SCREEN_H, {})
-    windowy = love.graphics.getHeight()
+    math.randomseed(os.time())
 	
+    -- Initialize parallaxing background
 	bg1 = {}
 	bg1.img = love.graphics.newImage("img/grass1.jpg")
-	bg1.y = 0
-	bg1.height = bg1.img:getHeight()
+	bg1.x = 0
+	bg1.width = bg1.img:getWidth()
 
 	bg2 = {}
 	bg2.img = love.graphics.newImage("img/grass2.jpg")
-	bg2.y = -windowy
-	bg2.height = bg2.img:getHeight()
+	bg2.x = -SCREEN_W
+	bg2.width = bg2.img:getWidth()
 
-    speed = 250
-    num_giraffes = 10
-    num_trees = 5
+    -- Initialize the sanctuary
+    sanctuaryImage = love.graphics.newImage("img/fence-zone.png")
+    sanctuary = {
+        rect = {
+            x = 500,
+            y = SCREEN_H * 0.25,
+            w = 640 * 0.25,
+            h = 960 * 0.25
+        },
+        hit = false
+    }
+
+    -- Initialize the giraffes
+    numGiraffes = 2
     giraffes = {}
-    math.randomseed(os.time())
-    for i = 1,num_giraffes do
+    giraffeImage = love.graphics.newImage("img/giraffe-bright.png")
+    giraffeIconImage = love.graphics.newImage("img/giraffe-bright.png")
+    for i = 1, numGiraffes do
         giraffes[i] = {
-                image = love.graphics.newImage("img/giraffe-bright.png"),
-                x = math.random() * 1200,
-                y = math.random() * 720,
-                onTrain = false
-                }
+            rect = {
+                x = math.random() * SCREEN_W,
+                y = math.random() * SCREEN_H,
+                w = giraffeImage:getWidth() * 0.17,
+                h = giraffeImage:getHeight() * 0.17
+            },
+            hit = false
+        }
     end
 
+    -- Initialize the trees
+    numTrees = 1
     trees = {}
-    for i = 1, num_trees do 
+    treeImage = love.graphics.newImage("img/tree.png")
+    treeHitImage = love.graphics.newImage("img/tree_collapsed.png")
+    for i = 1, numTrees do 
         trees[i] = {
-            image = love.graphics.newImage("img/tree.png"),
-            x = math.random() * 1200,
-            y = math.random() * 720,
-            collapsed = false
+            rect = {
+                x = math.random() * SCREEN_W,
+                y = math.random() * (SCREEN_H - treeImage:getHeight()),
+                w = treeImage:getWidth() / 4,
+                h = treeImage:getHeight() * 2 / 3
+            },
+            hit = false
         }
     end
 
     jeeps = {}
-    sanctuaries = {}
+end
 
-    showMenuScreen()
+function updateSanctuary(dt)
+    local dx = -Train.vx * dt
+
+    if not sanctuary.hit and rectCollision(sanctuary.rect, Train.rect) then
+        sanctuary.hit = true
+        Train:collideSanctuary()
+    end
+
+    if sanctuary.rect.x + dt < -sanctuary.rect.w then
+        -- Reset sanctuary
+        sanctuary.hit = false
+        sanctuary.rect.x = SCREEN_W * 4
+        sanctuary.rect.y = math.random() * (SCREEN_H - sanctuaryImage:getHeight() * 0.1)
+    else
+        -- Move the sanctuary normally
+        sanctuary.rect.x = sanctuary.rect.x + dx
+    end
 end
 
 function updateGiraffes(dt)
-    for i = 1,num_giraffes do
-        if not giraffes[i].onTrain then
-            giraffes[i].y = giraffes[i].y + speed * dt
+    local dx = -Train.vx * dt
 
-            if giraffes[i].y > windowy then
-                giraffes[i].y = 0
-                giraffes[i].x = math.random() * 1200
-            end
+    for _, giraffe in pairs(giraffes) do 
+        if not giraffe.hit and rectCollision(giraffe.rect, Train.rect) then
+            -- Giraffe collided with a train
+            giraffe.hit = true
+            Train:collideGiraffe()
+        end
+
+        if giraffe.rect.x + dt < -giraffe.rect.w then
+            -- Reset giraffe
+            giraffe.hit = false
+            giraffe.rect.x = SCREEN_W
+            giraffe.rect.y = math.random() * (SCREEN_H - giraffeImage:getHeight() * 0.17)
+        else
+            -- Move the giraffe normally
+            giraffe.rect.x = giraffe.rect.x + dx
         end
     end
-
 end
 
 function updateTrees(dt)
-    for i = 1, num_trees do 
-        trees[i].y = trees[i].y + speed * dt
+    local dx = -Train.vx * dt
 
-        if trees[i].y > windowy then
-            trees[i].image = love.graphics.newImage("img/tree.png")
-            trees[i].collapsed = false
-            trees[i].y = 0
-            trees[i].x = math.random() * 1200
+    for i = 1, numTrees do 
+        local tree = trees[i]
+
+        if not tree.hit and rectCollision(tree.rect, Train.rect) then
+            -- Tree collided with a train
+            tree.hit = true
+            Train:collideTree()
+        end
+
+        if tree.rect.x + dt < -tree.rect.w then
+            -- Reset tree
+            tree.hit = false
+            tree.rect.x = SCREEN_W
+            tree.rect.y = math.random() * (SCREEN_H - treeImage:getHeight())
+        else
+            -- Move the tree normally
+            tree.rect.x = tree.rect.x + dx
         end
     end
 end
 
 function updateBackground(dt)
-    local _, velocityY = Train.body:getLinearVelocity()
-    bg1.y = bg1.y - velocityY * dt
-	bg2.y = bg2.y - velocityY * dt
+    local velocityX  = Train.vx
+    bg1.x = bg1.x - velocityX * dt
+	bg2.x = bg2.x - velocityX * dt
 
-	if bg1.y > windowy then
-		bg1.y = bg2.y - bg1.height
+	if bg1.x + bg1.width <= 0 then
+		bg1.x = bg2.x + bg2.width
 	end
-	if bg2.y > windowy then
-		bg2.y = bg1.y - bg2.height
+	if bg2.x + bg2.width <= 0  then
+		bg2.x = bg1.x + bg1.width
+	end
+
+    if bg1.x > bg1.width then
+		bg1.x = bg2.x - bg1.width
+	end
+	if bg2.x > bg2.width  then
+		bg2.x = bg1.x - bg2.width
 	end
 	
-end
-
-function checkTreeCollisions(dt)
-    for _, tree in pairs(trees) do 
-        if not tree.collapsed and checkCollisionWithTrain(tree) then
-            tree.image = love.graphics.newImage("img/tree_collapsed.png")
-            tree.collapsed = true
-            -- Slow the train down since it hit a tree
-            velX, velY = Train.body:getLinearVelocity()
-            Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
-            Train:removeCart()
-            carCount = carCount - 1
-        end
-    end
 end
 
 function checkJeepCollisions(dt)
@@ -268,28 +301,6 @@ function checkJeepCollisions(dt)
     end
 end
 
-function checkGiraffeCollisions()
-    for _, giraffe in pairs(giraffes) do 
-        if checkCollisionWithTrain(giraffe) then 
-            -- TODO: Remove giraffe from being displayed
-            -- TODO: Add the giraffe to the train
-            giraffeCount = giraffeCount + 1
-            giraffe.onTrain = true
-            scoreCount = scoreCount + 50
-        end
-    end
-end
-
-function checkSanctuaryCollisions()
-    for _, sanctuary in pairs(sanctuaries) do 
-        if checkCollisionWithTrain(sanctuary) then 
-            if giraffeCount > 1 then
-                giraffeCount = giraffeCount - 1
-                -- TODO: actually remove giraffe from train
-            end
-        end
-    end
-end
 
 function checkCountMaxes()
     if speedCount > speedMaxCount then
@@ -312,40 +323,48 @@ end
 function love.update(dt)
     if isMenuScene then
     else
+        world:update(dt)
         speedCount = Train:getSpeed()
         Train:update(dt)
-        world:update(dt)
         updateBackground(dt)
+        updateSanctuary(dt)
         updateGiraffes(dt)
         updateTrees(dt)
-        checkTreeCollisions(dt)
         checkJeepCollisions(dt)
-        checkGiraffeCollisions()
-        checkSanctuaryCollisions()
         checkCountMaxes()
     end
 end
 
 function drawGiraffes()
-    for i = 1,num_giraffes do
-        love.graphics.draw(
-            giraffes[i].image, 
-            giraffes[i].x,
-            giraffes[i].y, 0,
-            0.15, 0.15)
+    for _, giraffe in pairs(giraffes) do
+        if not giraffe.hit then
+            love.graphics.draw(
+                giraffeImage, 
+                giraffe.rect.x,
+                giraffe.rect.y, 0,
+                0.15, 0.15)
+        end
     end
 end
 
 function drawBackground()
     love.graphics.setColor(255,255,255,255)
-	love.graphics.draw(bg1.img, 0, bg1.y)
-	love.graphics.draw(bg2.img, 0, bg2.y)
+	love.graphics.draw(bg1.img, bg1.x, 0)
+	love.graphics.draw(bg2.img, bg2.x, 0)
 end
 
 function drawTrees()
-    for _, value in pairs(trees) do 
-        love.graphics.draw(value.image, value.x, value.y)
+    for _, tree in pairs(trees) do
+        if tree.hit then
+            love.graphics.draw(treeHitImage, tree.rect.x, tree.rect.y + tree.rect.h / 2)
+        else
+            love.graphics.draw(treeImage, tree.rect.x - tree.rect.w, tree.rect.y - tree.rect.h / 3)
+        end
     end
+end
+
+function drawSanctuary()
+    love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y, 0, 0.25, 0.25)
 end
 
 function drawGUI()
@@ -403,38 +422,12 @@ function love.draw()
         love.graphics.print("Play", buttonX + 20, buttonY + 20)
     else
         drawBackground()
+        drawSanctuary()
         drawGiraffes()
         drawTrees()
         drawGUI()
         Train:draw()
     end
-end
-
-function checkCollisionWithTrain(gameObjectTable)
-    -- First check to see if the object collided with the engine
-    trainX, trainY = Train.body:getPosition()
-    trainW, trainH = Train.w, Train.h
-    objectCollidedWithEngine = trainX < gameObjectTable.x + gameObjectTable.image:getWidth() and
-        gameObjectTable.x < trainX + trainW and
-        trainY < gameObjectTable.y + gameObjectTable.image:getHeight() and
-        gameObjectTable.y < trainY + trainH
-    
-    if objectCollidedWithEngine then 
-        return true
-    end
-
-    for _, cart in pairs(Train.carts) do 
-        cartX, cartY = cart.body:getPosition()
-        cartW, cartH = cart.w, cart.h
-        objectCollidedWithCart = cartX < gameObjectTable.x + gameObjectTable.image:getWidth() and
-            gameObjectTable.x < cartX + cartW and
-            cartY < gameObjectTable.y + gameObjectTable.image:getHeight() and
-            gameObjectTable.y < cartY + cartH
-        if objectCollidedWithCart then 
-            return true
-        end
-    end
-    return false
 end
 
 function love.keypressed(key)
@@ -449,4 +442,28 @@ function love.mousepressed(x,y)
     if (isMenuScene and (x > buttonX and x < buttonX + buttonWidth) and (y > buttonY and y < buttonY + buttonHeight)) then
         showGameScreen()
     end
+end
+
+-- collision code
+function beginContact(a, b, coll)
+
+end
+
+function endContact(a, b, coll)
+
+end
+ 
+function preSolve(a, b, coll)
+ 
+end
+ 
+function postSolve(a, b, coll, normalimpulse, tangentimpulse)
+ 
+end
+
+function rectCollision(rect1, rect2)
+    return rect1.x < rect2.x + rect2.w and
+        rect1.x + rect1.w > rect2.x and
+        rect1.y < rect2.y + rect2.h and
+        rect1.y + rect1.h > rect2.y
 end
