@@ -4,7 +4,7 @@ SCREEN_W = 1280
 SCREEN_H = 720
 
 -- Menu screen vars
-buttonX, buttonY, buttonWidth, buttonHeight = 420, 260, 300, 100
+buttonX, buttonY, buttonWidth, buttonHeight = (SCREEN_W/2)-150, (SCREEN_H/2)+100, 300, 100
 
 -- Global count vars
 speedCount, speedMaxCount = 0,0
@@ -200,6 +200,8 @@ function love.load()
     end
 
     jeeps = {}
+
+    showMenuScreen()
 end
 
 function updateSanctuary(dt)
@@ -420,6 +422,9 @@ function love.draw()
         love.graphics.setFont(buttonFont)
         -- love.graphics.setFont()
         love.graphics.print("Play", buttonX + 20, buttonY + 20)
+
+        love.graphics.printf("To move up, press 'W'\nTo move down, press 'D'\nCollect giraffes and deposit them in sanctuaries\nAvoid trees and destroy jeeps", 
+                -350, SCREEN_H / 8, 2000, "center")
     else
         drawBackground()
         drawSanctuary()
