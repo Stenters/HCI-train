@@ -35,7 +35,7 @@ Train = {
     body = love.physics.newBody(world, 100, 100, "dynamic"),
 
     rect = {
-         x = 0,
+         x = 100,
          y = 0,
          w = 128,
          h = 48,
@@ -176,7 +176,7 @@ function love.load()
 	bg2.width = bg2.img:getWidth()
 
     -- Initialize the sanctuary
-    sanctuaryImage = love.graphics.newImage("img/fence-zone.png")
+    sanctuaryImage = love.graphics.newImage("img/sanctuary.png")
     sanctuary = {
         rect = {
             x = 500,
@@ -221,7 +221,20 @@ function love.load()
         }
     end
 
+    numJeeps = 1
     jeeps = {}
+    jeepImage = love.graphics.newImage("img/jeep.png")
+    for i = 1, numJeeps do
+        jeeps[i] = {
+            rect = {
+                x = math.random() * SCREEN_W,
+                y = math.random() * (SCREEN_H - jeepImage:getHeight()),
+                w = jeepImage:getWidth(),
+                h = jeepImage:getHeight()
+            },
+            hit = false
+        }
+    end
 
     showMenuScreen()
 end
@@ -263,6 +276,28 @@ function updateGiraffes(dt)
         else
             -- Move the giraffe normally
             giraffe.rect.x = giraffe.rect.x + dx
+        end
+    end
+end
+
+function updateJeeps(dt)
+    local dx = -Train.vx * dt
+
+    for _, jeep in pairs(jeeps) do 
+        if not jeep.hit and rectCollision(jeep.rect, Train.rect) then
+            -- Jeep collided with a train
+            jeep.hit = true
+            Train:collideJeep()
+        end
+
+        if jeep.rect.x + dt < -jeep.rect.w then
+            -- Reset jeep
+            jeep.hit = false
+            jeep.rect.x = SCREEN_W
+            jeep.rect.y = math.random() * (SCREEN_H - jeepImage:getHeight() * 0.17)
+        else
+            -- Move the jeep normally
+            jeep.rect.x = jeep.rect.x + dx
         end
     end
 end
@@ -312,19 +347,6 @@ function updateBackground(dt)
 	
 end
 
-function checkJeepCollisions(dt)
-    for _, jeep in pairs(jeeps) do 
-        if checkCollisionWithTrain(jeep) then 
-            jeep.image = love.graphics.newImage('TODO') -- TODO: Replace this once Jeep graphics are done
-            -- Slow the train down since it hit a tree
-            velX, velY = Train.body:getLinearVelocity()
-            Train.body:setLinearVelocity(velX - velX * dt, velY - velY * dt)
-            jeepCount = jeepCount + 1
-            scoreCount = scoreCount + 10
-        end
-    end
-end
-
 function increaseScore(ds)
     scoreCount = scoreCount + ds
     if scoreCount > scoreMaxCount then
@@ -342,7 +364,7 @@ function love.update(dt)
         updateSanctuary(dt)
         updateGiraffes(dt)
         updateTrees(dt)
-        checkJeepCollisions(dt)
+        updateJeeps(dt)
     end
 end
 
@@ -370,6 +392,18 @@ function drawTrees()
             love.graphics.draw(treeHitImage, tree.rect.x, tree.rect.y + tree.rect.h / 2)
         else
             love.graphics.draw(treeImage, tree.rect.x - tree.rect.w, tree.rect.y - tree.rect.h / 3)
+        end
+    end
+end
+
+function drawJeeps()
+    for _, jeep in pairs(jeeps) do
+        if not jeep.hit then
+            love.graphics.draw(
+                jeepImage, 
+                jeep.rect.x,
+                jeep.rect.y, 0,
+                0.15, 0.15)
         end
     end
 end
@@ -438,6 +472,7 @@ function love.draw()
         drawSanctuary()
         drawGiraffes()
         drawTrees()
+        drawJeeps()
         Train:draw()
     end
 end
