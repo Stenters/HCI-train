@@ -42,7 +42,7 @@ Train = {
     },
     thrust = 400,
     torque = 1,
-    maxSpeed = 1000,
+    maxSpeed = 250,
 
     vx = 0,
     vy = 0,
@@ -51,7 +51,7 @@ Train = {
     shape = love.physics.newRectangleShape(100, 100),
     
     carts = {},
-    giraffeCount = 0,
+    giraffeCount = 20,
     cartCount = 0
 }
 
@@ -73,7 +73,8 @@ function Train:update(dt)
     self.body:setAngularVelocity(angularVel)
 
     -- Accelerate
-    self.speed = lerp(self.speed, self.maxSpeed, (1 / 3) * dt)
+    self.maxSpeed = 250 * (self.giraffeCount + 1)
+    self.speed = lerp(self.speed, self.maxSpeed, (1 / (1 + self.giraffeCount)) * dt)
 
     -- Update position
     local angle = self.body:getAngle()
@@ -107,15 +108,52 @@ function Train:draw()
 
     local cx, cy = self.body:getWorldCenter()
 
-    local w = giraffeImage:getWidth() * 0.075
-    local h = giraffeImage:getHeight() * 0.075
+    -- Giraffe dimensions
+    local gW = giraffeImage:getWidth() * 0.075
+    local gH = giraffeImage:getHeight() * 0.075
+
+    local xOffset = 0
+
+    if self.giraffeCount > 5 then
+        love.graphics.draw(giraffeCart,
+            self.rect.x, self.rect.y + self.rect.h / 2,
+            self.body:getAngle(),
+            1, 1,
+            giraffeCart:getWidth(), self.rect.h / 2)
+    end
+
+    if self.giraffeCount > 10 then
+        love.graphics.draw(giraffeCart,
+            self.rect.x, self.rect.y + self.rect.h / 2,
+            self.body:getAngle(),
+            1, 1,
+            giraffeCart:getWidth() + giraffeCart:getWidth(), self.rect.h / 2)
+    end
+
     for i=1, self.giraffeCount do
-        x = (self.rect.x + i * w * 0.2) * math.cos(self.body:getAngle())
-        y = self.rect.y + i * h * 0.2 * math.sin(self.body:getAngle())
+        xOffset = xOffset - gW * 0.2
         love.graphics.draw(giraffeImage,
-            x + w, y, self.body:getAngle(),
+            self.rect.x + self.rect.w / 2 + xOffset, self.rect.y, self.body:getAngle(),
             -0.075, 0.075,
-            0, 0)
+            gW - xOffset, gH / 2)
+    end
+
+    xOffset = xOffset - 24
+    for i=6, math.min(11, self.giraffeCount) do
+        xOffset = xOffset - gW * 0.2
+        love.graphics.draw(giraffeImage,
+            self.rect.x + self.rect.w / 2 + xOffset, self.rect.y, self.body:getAngle(),
+            -0.075, 0.075,
+            0, gH / 2)
+    end
+
+    xOffset = xOffset - 24
+    for i=11, math.min(16, self.giraffeCount) do
+        xOffset = xOffset - gW * 0.2
+        love.graphics.draw(giraffeImage,
+            self.rect.x + self.rect.w / 2 + xOffset, self.rect.y, self.body:getAngle() * 1.25,
+            -0.075, 0.075,
+            gW + xOffset, gH / 2)
     end
 end
 
@@ -185,7 +223,7 @@ function love.load()
     numGiraffes = 2
     giraffes = {}
     giraffeImage = love.graphics.newImage("img/giraffe-bright.png")
-    giraffeIconImage = love.graphics.newImage("img/giraffe-bright.png")
+    giraffeCart = love.graphics.newImage("cart.png")
     for i = 1, numGiraffes do
         giraffes[i] = {
             rect = {
@@ -398,8 +436,7 @@ function drawJeeps()
                 jeepImage, 
                 jeep.rect.x,
                 jeep.rect.y, 0,
-                0.15, 0.15)
-            love.graphics.rectangle("fill", jeep.rect.x, jeep.rect.y, jeep.rect.w, jeep.rect.h)
+                0.05, 0.05)
         end
     end
 end
@@ -408,8 +445,6 @@ function drawSanctuary()
     love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y
         , 0, .2, .2
     )
-    love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y, 0, 0.25, 0.25)
-    love.graphics.rectangle("fill", sanctuary.rect.x, sanctuary.rect.y, sanctuary.rect.w, sanctuary.rect.h)
 end
 
 function drawGUI()
