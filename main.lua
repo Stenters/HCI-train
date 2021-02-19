@@ -221,6 +221,7 @@ function love.load()
         }
     end
 
+    -- Initialize the jeeps
     numJeeps = 1
     jeeps = {}
     jeepImage = love.graphics.newImage("img/jeep.png")
@@ -233,8 +234,22 @@ function love.load()
                 h = jeepImage:getHeight() * .05
                 -- w =
             },
-            hit = false
+            hit = false,
+            frame = 0
         }
+    end
+
+    -- Initialize the jeep explosion animation
+    animation = {}
+    animation.spriteSheet = love.graphics.newImage("img/explosion.png")
+    animation.quads = {}
+    spriteWidth = animation.spriteSheet:getWidth() / 5
+    spriteHeight = animation.spriteSheet:getHeight() / 5
+
+    for i = 0, animation.spriteSheet:getHeight() - spriteHeight, spriteHeight do
+        for j = 0, animation.spriteSheet:getWidth() - spriteWidth, spriteWidth do
+            table.insert(animation.quads, love.graphics.newQuad(j, i, spriteWidth, spriteHeight, animation.spriteSheet:getDimensions()))
+        end
     end
 
     showMenuScreen()
@@ -296,6 +311,7 @@ function updateJeeps(dt)
             jeep.hit = false
             jeep.rect.x = SCREEN_W
             jeep.rect.y = math.random() * (SCREEN_H - jeepImage:getHeight() * 0.17)
+            jeep.frame = 0
         else
             -- Move the jeep normally
             jeep.rect.x = jeep.rect.x + dx
@@ -385,6 +401,12 @@ function drawBackground()
     love.graphics.setColor(255,255,255,255)
 	love.graphics.draw(bg1.img, bg1.x, 0)
 	love.graphics.draw(bg2.img, bg2.x, 0)
+
+    
+    for i = 1,27 do
+        -- love.graphics.draw(animation.spriteSheet, animation.quads[i], spriteWidth * i, spriteHeight * i / 5)
+        -- love.graphics.draw(animation.spriteSheet, animation.quads[26])
+    end
 end
 
 function drawTrees()
@@ -406,9 +428,15 @@ function drawJeeps()
                 jeep.rect.y
                 ,0,.05,.05
             )
+        else
+            jeep.frame = jeep.frame + 1
+            if jeep.frame < 10 then
+                love.graphics.draw(animation.spriteSheet, animation.quads[jeep.frame], jeep.rect.x, jeep.rect.y)
+            end
         end
     end
 end
+
 function drawSanctuary()
     love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y
         , 0, .2, .2
