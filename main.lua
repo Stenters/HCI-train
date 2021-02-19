@@ -181,8 +181,8 @@ function love.load()
         rect = {
             x = 500,
             y = SCREEN_H * 0.25,
-            w = 640 * 0.25,
-            h = 960 * 0.25
+            w = sanctuaryImage:getWidth() * .2,
+            h = sanctuaryImage:getHeight() * .2
         },
         hit = false
     }
@@ -224,14 +224,14 @@ function love.load()
     numJeeps = 1
     jeeps = {}
     jeepImage = love.graphics.newImage("img/jeep.png")
-    jeepImage
     for i = 1, numJeeps do
         jeeps[i] = {
             rect = {
                 x = math.random() * SCREEN_W,
                 y = math.random() * (SCREEN_H - jeepImage:getHeight()),
-                w = jeepImage:getWidth(),
-                h = jeepImage:getHeight()
+                w = jeepImage:getWidth() * .05,
+                h = jeepImage:getHeight() * .05
+                -- w =
             },
             hit = false
         }
@@ -403,14 +403,16 @@ function drawJeeps()
             love.graphics.draw(
                 jeepImage, 
                 jeep.rect.x,
-                jeep.rect.y, 0,
-                0.15, 0.15)
+                jeep.rect.y
+                ,0,.05,.05
+            )
         end
     end
 end
-
 function drawSanctuary()
-    love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y, 0, 0.25, 0.25)
+    love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y
+        , 0, .2, .2
+    )
 end
 
 function drawGUI()
