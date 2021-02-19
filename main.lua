@@ -224,6 +224,7 @@ function love.load()
     numJeeps = 1
     jeeps = {}
     jeepImage = love.graphics.newImage("img/jeep.png")
+    jeepImage
     for i = 1, numJeeps do
         jeeps[i] = {
             rect = {
