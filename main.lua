@@ -71,12 +71,6 @@ function Train:update(dt)
         angularVel = -(4 * PI) * dt
     end
     self.body:setAngularVelocity(angularVel)
-    -- if love.keyboard.isDown("space") then
-    --     self:addCart()
-    -- end
-    -- if love.keyboard.isDown("backspace") then
-    --     self:removeCart()
-    -- end
 
     -- Accelerate
     self.speed = lerp(self.speed, self.maxSpeed, (1 / 3) * dt)
@@ -403,16 +397,19 @@ function drawJeeps()
             love.graphics.draw(
                 jeepImage, 
                 jeep.rect.x,
-                jeep.rect.y
-                ,0,.05,.05
-            )
+                jeep.rect.y, 0,
+                0.15, 0.15)
+            love.graphics.rectangle("fill", jeep.rect.x, jeep.rect.y, jeep.rect.w, jeep.rect.h)
         end
     end
 end
+
 function drawSanctuary()
     love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y
         , 0, .2, .2
     )
+    love.graphics.draw(sanctuaryImage, sanctuary.rect.x, sanctuary.rect.y, 0, 0.25, 0.25)
+    love.graphics.rectangle("fill", sanctuary.rect.x, sanctuary.rect.y, sanctuary.rect.w, sanctuary.rect.h)
 end
 
 function drawGUI()
@@ -492,23 +489,6 @@ function love.mousepressed(x,y)
     if (isMenuScene and (x > buttonX and x < buttonX + buttonWidth) and (y > buttonY and y < buttonY + buttonHeight)) then
         showGameScreen()
     end
-end
-
--- collision code
-function beginContact(a, b, coll)
-
-end
-
-function endContact(a, b, coll)
-
-end
- 
-function preSolve(a, b, coll)
- 
-end
- 
-function postSolve(a, b, coll, normalimpulse, tangentimpulse)
- 
 end
 
 function rectCollision(rect1, rect2)
